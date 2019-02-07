@@ -1,8 +1,12 @@
 import sys
+from sqlalchemy import create_engine
+import pandas as pd
 
 
 def load_data(database_filepath):
-    pass
+    engine = create_engine('sqlite:///messages.db')
+    df = pd.read_sql('messages_table', engine)
+    return df
 
 
 def tokenize(text):

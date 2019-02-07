@@ -1,16 +1,32 @@
 import sys
+import pandas as pd
+from tqdm import tqdm
+from sqlalchemy import create_engine
 
 
 def load_data(messages_filepath, categories_filepath):
-    pass
+    messages = pd.read_csv(messages_filepath)
+    categories = pd.read_csv(categories_filepath)
+    df = pd.merge(messages, categories, on='id')
+    return df
+    
 
 
 def clean_data(df):
-    pass
-
+    categories = df['categories'].str.split(pat=";", expand=True)
+    category_colnames = categories.iloc[0].str.split(pat="-", expand=True)[0]
+    categories.columns = category_colnames
+    for i in tqdm(range (0, len(categories))):
+        categories.iloc[i] = categories.iloc[i].str.split(pat="-", expand=True)[1]
+    categories = categories.astype(int)
+    df.drop(['categories'], axis=1, inplace=True)
+    df = pd.concat([df, categories], axis=1)
+    df.drop_duplicates(inplace=True)
+    return df
 
 def save_data(df, database_filename):
-    pass  
+    engine = create_engine('sqlite:///' + database_filename)
+    df.to_sql('messages_table', engine, index=False)
 
 
 def main():
