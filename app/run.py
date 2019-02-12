@@ -11,27 +11,26 @@ from plotly.graph_objs import Bar
 from sklearn.externals import joblib
 from sqlalchemy import create_engine
 
-
 app = Flask(__name__)
 
+
 def tokenize(text):
-    tokens = word_tokenize(text)
-    lemmatizer = WordNetLemmatizer()
-
-    clean_tokens = []
-    for tok in tokens:
-        clean_tok = lemmatizer.lemmatize(tok).lower().strip()
-        clean_tokens.append(clean_tok)
-
+    '''tokenizes text from query using tokenizer built in 
+    train_classifer.py'''
+    clean_tokens = tok.texts_to_matrix(text, mode='count')
     return clean_tokens
 
+
 # load data
-engine = create_engine('sqlite:///../data/YourDatabaseName.db')
-df = pd.read_sql_table('YourTableName', engine)
+engine = create_engine('sqlite:///../data/messages.db')
+df = pd.read_sql_table('messages_table', engine)
+df.iloc[:,4:-1] = df.iloc[:,4:-1].astype(int)
 
 # load model
-model = joblib.load("../models/your_model_name.pkl")
+model = joblib.load("../models/classifier.pickle")
 
+# Load tokenizer
+tok = joblib.load("../models/tokenizer.pickle")
 
 # index webpage displays cool visuals and receives user input text for model
 @app.route('/')
@@ -39,13 +38,33 @@ model = joblib.load("../models/your_model_name.pkl")
 def index():
     
     # extract data needed for visuals
-    # TODO: Below is an example - modify to extract data for your own visuals
     genre_counts = df.groupby('genre').count()['message']
     genre_names = list(genre_counts.index)
+    category_counts = df.iloc[:, 4:-1].sum()
+    
+    # category_counts.index.values.tolist()
     
     # create visuals
     # TODO: Below is an example - modify to create your own visuals
     graphs = [
+         {
+            'data': [
+                Bar(
+                    x=category_counts.index.values.tolist(),
+                    y=category_counts.values.tolist()
+                )
+            ],
+
+            'layout': {
+                'title': 'Breakdown by Category',
+                'yaxis': {
+                    'title': "Count"
+                },
+                'xaxis': {
+                    'title': "Category"
+                }
+            }
+        },
         {
             'data': [
                 Bar(
@@ -64,6 +83,7 @@ def index():
                 }
             }
         }
+        
     ]
     
     # encode plotly graphs in JSON
@@ -78,11 +98,15 @@ def index():
 @app.route('/go')
 def go():
     # save user input in query
-    query = request.args.get('query', '') 
-
+    query = request.args.get('query', '')
+    print(query)
+    text = tokenize([query])
     # use model to predict classification for query
-    classification_labels = model.predict([query])[0]
-    classification_results = dict(zip(df.columns[4:], classification_labels))
+    classification_labels = model.predict(text)
+    print(classification_labels.shape)
+    print(classification_labels[0])
+    
+    classification_results = dict(zip(df.columns[4:], classification_labels[0]))
 
     # This will render the go.html Please see that file. 
     return render_template(
