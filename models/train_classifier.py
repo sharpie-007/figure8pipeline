@@ -5,6 +5,7 @@ import pandas as pd
 from keras.preprocessing.text import Tokenizer
 from sklearn.metrics import classification_report
 from sklearn.model_selection import train_test_split
+from sklearn.model_selection import GridSearchCV
 from sklearn.multioutput import MultiOutputClassifier
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.pipeline import Pipeline
@@ -57,6 +58,20 @@ def evaluate_model(model, X_test, Y_test):
             classification_report(truth, prediction))
 
 
+def run_grid_search(model, X_train, Y_train):
+    '''Runs GridSearchCV to compare multiple model parameters against each
+    other to identify the optimal configuration for accuracy'''
+    parameters = [{'classifier__estimator__n_estimators': [50, 100],
+              'classifier__estimator__criterion': ['gini', 'entropy']}]
+    cv = GridSearchCV(model, parameters, cv=5)
+    cv.fit(X_train, y_train)
+    means = cv.cv_results_['mean_test_score']
+    stds = cv.cv_results_['std_test_score']
+    for mean, std, params in zip(means, stds, cv.cv_results_['params']):
+        print("%0.3f (+/-%0.03f) for %r"
+            % (mean, std * 2, params))
+
+
 def save_model(tok, model, model_filepath):
     '''Saves models to disk'''
     
@@ -92,6 +107,9 @@ def main():
         
         print('Evaluating model...')
         evaluate_model(model, X_test, Y_test)
+
+        print('Running GridSearchCV...')
+        run_grid_search(model, X_train, Y_train)
 
         print('Saving model...\n    MODEL: {}'.format(model_filepath))
         save_model(tok, model, model_filepath)
