@@ -5,14 +5,17 @@ from sqlalchemy import create_engine
 
 
 def load_data(messages_filepath, categories_filepath):
+    '''Reads in two CSV's and merges them on the ID column.
+    Returns the merged dataframe.'''
     messages = pd.read_csv(messages_filepath)
     categories = pd.read_csv(categories_filepath)
     df = pd.merge(messages, categories, on='id')
     return df
     
 
-
 def clean_data(df):
+    '''Splits dataframe categories on ";" and creates a sparse matrix of 
+    numbers. Drops duplicates and returns new dataframe'''
     categories = df['categories'].str.split(pat=";", expand=True)
     category_colnames = categories.iloc[0].str.split(pat="-", expand=True)[0]
     categories.columns = category_colnames
@@ -24,26 +27,23 @@ def clean_data(df):
     df.drop_duplicates(inplace=True)
     return df
 
+
 def save_data(df, database_filename):
+    '''Saves dataframe to sql using sqlalchemy'''
     engine = create_engine('sqlite:///' + database_filename)
     df.to_sql('messages_table', engine, index=False)
 
 
 def main():
     if len(sys.argv) == 4:
-
         messages_filepath, categories_filepath, database_filepath = sys.argv[1:]
-
         print('Loading data...\n    MESSAGES: {}\n    CATEGORIES: {}'
               .format(messages_filepath, categories_filepath))
         df = load_data(messages_filepath, categories_filepath)
-
         print('Cleaning data...')
-        df = clean_data(df)
-        
+        df = clean_data(df)   
         print('Saving data...\n    DATABASE: {}'.format(database_filepath))
         save_data(df, database_filepath)
-        
         print('Cleaned data saved to database!')
     
     else:
