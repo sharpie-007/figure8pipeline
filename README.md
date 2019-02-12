@@ -9,10 +9,11 @@ Once the cleaning and training scripts have been run, a demo Flask app is availa
 
     - To run ETL pipeline that cleans data and stores in database
         `python data/process_data.py data/disaster_messages.csv data/disaster_categories.csv data/DisasterResponse.db`
-        \nThis will output to data/messages.db
+        
+        (This will output to data/messages.db)
     - To run ML pipeline that trains classifier and saves
         `python models/train_classifier.py data/messages.db ./`
-        \nthis will output to models/classifier.pickle and models/tokenizer.pickle.
+        (This will output to models/classifier.pickle and models/tokenizer.pickle)
 
 2. Run the following command in the app's directory to run your web app.
     `python run.py`
